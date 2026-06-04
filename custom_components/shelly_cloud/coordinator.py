@@ -22,12 +22,13 @@ class ShellyCloudCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         hass: HomeAssistant,
         api: ShellyCloudApi,
         devices: list[dict[str, str]],
+        scan_interval: int = DEFAULT_SCAN_INTERVAL,
     ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            update_interval=timedelta(seconds=scan_interval),
         )
         self.api = api
         # devices: [{"device_id": "abc", "device_name": "Wohnzimmer"}, ...]

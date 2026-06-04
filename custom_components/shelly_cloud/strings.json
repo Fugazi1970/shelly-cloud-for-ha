@@ -50,6 +50,13 @@
         "data": {
           "confirm": "Ja, Gerät entfernen"
         }
+      },
+      "interval": {
+        "title": "Update-Intervall",
+        "description": "Wie oft sollen die Daten aus der Cloud abgerufen werden? (1–60 Sekunden)\n\nHinweis: Die Shelly Cloud erlaubt maximal 1 Anfrage pro Sekunde.",
+        "data": {
+          "scan_interval": "Intervall in Sekunden"
+        }
       }
     },
     "error": {

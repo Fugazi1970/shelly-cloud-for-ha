@@ -5,6 +5,12 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.0.0-alpha.2] – 2026-06-04
+
+### Hinzugefügt
+- Update-Intervall ist jetzt einstellbar (1–60 Sekunden) über den
+  Optionen-Dialog der Integration. Standard bleibt 30 Sekunden.
+
 ## [1.0.0-alpha.1] – 2026-06-04
 
 Erste Alpha-Version. Funktionsfähig, aber noch in Erprobung.

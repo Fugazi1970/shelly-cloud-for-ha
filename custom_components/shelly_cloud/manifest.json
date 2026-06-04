@@ -1,7 +1,7 @@
 {
   "domain": "shelly_cloud",
   "name": "Shelly Cloud",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "documentation": "https://shelly-api-docs.shelly.cloud/cloud-control-api/communication-v2",
   "issue_tracker": "https://github.com/Fugazi1970/shelly-cloud-for-ha/issues",
   "dependencies": [],

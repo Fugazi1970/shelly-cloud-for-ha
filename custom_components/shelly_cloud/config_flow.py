@@ -6,9 +6,9 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
-    TextSelector,
-    TextSelectorConfig,
-    TextSelectorType,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
 )
 
 from .api import ShellyCloudApi, ShellyCloudApiError, ShellyCloudAuthError
@@ -17,8 +17,12 @@ from .const import (
     CONF_DEVICE_ID,
     CONF_DEVICE_NAME,
     CONF_DEVICES,
+    CONF_SCAN_INTERVAL,
     CONF_SERVER_URL,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
 )
 
 
@@ -128,13 +132,13 @@ class ShellyCloudOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         devices: list[dict] = self.config_entry.options.get(CONF_DEVICES, [])
-
-        if not devices:
-            # Keine Geräte vorhanden → direkt zum Hinzufügen
-            return await self.async_step_add_device()
+        interval = self.config_entry.options.get(
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+        )
 
         options = {
             "add": "Gerät hinzufügen",
+            "interval": f"Update-Intervall ändern (aktuell {interval}s)",
             **{d[CONF_DEVICE_ID]: f"Entfernen: {d.get(CONF_DEVICE_NAME, d[CONF_DEVICE_ID])}"
                for d in devices},
         }
@@ -143,9 +147,10 @@ class ShellyCloudOptionsFlow(config_entries.OptionsFlow):
             action = user_input["action"]
             if action == "add":
                 return await self.async_step_add_device()
-            else:
-                self._remove_id = action
-                return await self.async_step_remove_device()
+            if action == "interval":
+                return await self.async_step_interval()
+            self._remove_id = action
+            return await self.async_step_remove_device()
 
         return self.async_show_form(
             step_id="init",
@@ -158,6 +163,35 @@ class ShellyCloudOptionsFlow(config_entries.OptionsFlow):
                     for d in devices
                 ) or "–"
             },
+        )
+
+    async def async_step_interval(self, user_input=None):
+        """Update-Intervall (1–60 s) einstellen."""
+        current = self.config_entry.options.get(
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+        )
+
+        if user_input is not None:
+            interval = int(user_input[CONF_SCAN_INTERVAL])
+            return self.async_create_entry(
+                data={**self.config_entry.options, CONF_SCAN_INTERVAL: interval}
+            )
+
+        return self.async_show_form(
+            step_id="interval",
+            data_schema=vol.Schema({
+                vol.Required(
+                    CONF_SCAN_INTERVAL, default=current
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_SCAN_INTERVAL,
+                        max=MAX_SCAN_INTERVAL,
+                        step=1,
+                        unit_of_measurement="s",
+                        mode=NumberSelectorMode.SLIDER,
+                    )
+                ),
+            }),
         )
 
     async def async_step_add_device(self, user_input=None):
