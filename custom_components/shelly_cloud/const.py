@@ -8,4 +8,4 @@ CONF_DEVICES = "devices"
 
 DEFAULT_SCAN_INTERVAL = 30
 
-PLATFORMS = ["switch", "cover", "light"]
+PLATFORMS = ["sensor", "switch", "cover", "light"]
