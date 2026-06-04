@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Shelly Cloud",
+        "description": "Enter the server URI and Authorization Key from the Shelly Cloud app settings (User Settings → Authorization cloud key).",
+        "data": {
+          "server_url": "Server URL (e.g. https://shelly-16-eu.shelly.cloud)",
+          "auth_key": "Authorization Key"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid Authorization Key.",
+      "cannot_connect": "Failed to connect to the Shelly Cloud server."
+    },
+    "abort": {
+      "already_configured": "Shelly Cloud is already configured."
+    }
+  }
+}

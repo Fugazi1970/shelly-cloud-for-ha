@@ -1,0 +1,5 @@
+{
+  "name": "Shelly Cloud",
+  "render_readme": false,
+  "homeassistant": "2024.1.0"
+}

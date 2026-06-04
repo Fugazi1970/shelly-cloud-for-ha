@@ -1,0 +1,12 @@
+{
+  "domain": "shelly_cloud",
+  "name": "Shelly Cloud",
+  "version": "1.0.0",
+  "documentation": "https://shelly-api-docs.shelly.cloud/cloud-control-api/communication-v2",
+  "issue_tracker": "https://github.com/YOUR_GITHUB/shelly_cloud_ha/issues",
+  "dependencies": [],
+  "codeowners": [],
+  "requirements": [],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}
