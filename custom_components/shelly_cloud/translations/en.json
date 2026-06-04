@@ -2,20 +2,60 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect Shelly Cloud",
-        "description": "Enter the server URI and Authorization Key from the Shelly Cloud app settings (User Settings → Authorization cloud key).",
+        "title": "Shelly Cloud verbinden",
+        "description": "Server-URI und Authorization Key aus der Shelly Cloud App (Benutzereinstellungen → Authorization cloud key).",
         "data": {
-          "server_url": "Server URL (e.g. https://shelly-16-eu.shelly.cloud)",
+          "server_url": "Server URL (z. B. https://shelly-11-eu.shelly.cloud)",
           "auth_key": "Authorization Key"
+        }
+      },
+      "add_device": {
+        "title": "Erstes Gerät hinzufügen (optional)",
+        "description": "{hint}",
+        "data": {
+          "device_id": "Device ID",
+          "device_name": "Anzeigename (optional)"
         }
       }
     },
     "error": {
-      "invalid_auth": "Invalid Authorization Key.",
-      "cannot_connect": "Failed to connect to the Shelly Cloud server."
+      "invalid_auth": "Ungültiger Authorization Key.",
+      "cannot_connect": "Verbindung zum Shelly Cloud Server fehlgeschlagen.",
+      "device_not_found": "Gerät nicht gefunden oder nicht erreichbar."
     },
     "abort": {
-      "already_configured": "Shelly Cloud is already configured."
+      "already_configured": "Shelly Cloud ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Shelly Cloud Geräte verwalten",
+        "description": "Konfigurierte Geräte:\n{devices}",
+        "data": {
+          "action": "Aktion"
+        }
+      },
+      "add_device": {
+        "title": "Gerät hinzufügen",
+        "description": "{hint}",
+        "data": {
+          "device_id": "Device ID",
+          "device_name": "Anzeigename (optional)"
+        }
+      },
+      "remove_device": {
+        "title": "Gerät entfernen",
+        "description": "Gerät \"{device_name}\" ({device_id}) wirklich entfernen?",
+        "data": {
+          "confirm": "Ja, Gerät entfernen"
+        }
+      }
+    },
+    "error": {
+      "device_not_found": "Gerät nicht gefunden oder nicht erreichbar.",
+      "already_configured": "Dieses Gerät ist bereits konfiguriert.",
+      "device_id_required": "Bitte eine Device ID eingeben."
     }
   }
 }

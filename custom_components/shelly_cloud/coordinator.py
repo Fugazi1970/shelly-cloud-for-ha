@@ -15,9 +15,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ShellyCloudCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
-    """Koordiniert das Polling aller Shelly Cloud Geräte."""
+    """Koordiniert das Polling der manuell konfigurierten Shelly-Geräte."""
 
-    def __init__(self, hass: HomeAssistant, api: ShellyCloudApi) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        api: ShellyCloudApi,
+        devices: list[dict[str, str]],
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
@@ -25,26 +30,26 @@ class ShellyCloudCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
         self.api = api
-        self._device_ids: list[str] = []
-        # Gerätemetadaten aus der Geräteliste (id, type, code, name, ...)
-        self.device_info: dict[str, dict[str, Any]] = {}
+        # devices: [{"device_id": "abc", "device_name": "Wohnzimmer"}, ...]
+        self.devices = devices
 
-    async def async_setup(self) -> None:
-        """Geräteliste laden und device_ids befüllen."""
-        devices = await self.api.list_devices()
-        self.device_info = {}
-        for dev in devices:
-            dev_id = dev.get("id") or dev.get("_id")
-            if dev_id:
-                self.device_info[dev_id] = dev
-        self._device_ids = list(self.device_info.keys())
-        _LOGGER.debug("Shelly Cloud: %d Geräte gefunden", len(self._device_ids))
+    @property
+    def device_ids(self) -> list[str]:
+        from .const import CONF_DEVICE_ID
+        return [d[CONF_DEVICE_ID] for d in self.devices]
+
+    def device_name(self, device_id: str) -> str:
+        from .const import CONF_DEVICE_ID, CONF_DEVICE_NAME
+        for d in self.devices:
+            if d[CONF_DEVICE_ID] == device_id:
+                return d.get(CONF_DEVICE_NAME, device_id)
+        return device_id
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
-        if not self._device_ids:
+        if not self.device_ids:
             return {}
         try:
-            raw = await self.api.get_devices_status(self._device_ids)
+            raw = await self.api.get_devices_status(self.device_ids)
         except ShellyCloudApiError as exc:
             raise UpdateFailed(f"Fehler beim Abruf der Gerätedaten: {exc}") from exc
 

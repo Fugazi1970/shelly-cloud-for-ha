@@ -81,44 +81,7 @@ class ShellyCloudApi:
                 await asyncio.sleep(1)
         return results
 
-    async def list_devices(self) -> list[dict[str, Any]]:
-        """Alle Geräte des Accounts abrufen.
-
-        Shelly Cloud v1 erwartet auth_key im POST-Body (form-encoded),
-        nicht als Query-Parameter.
-        """
-        url = self._url("/interface/device/list")
-        # auth_key muss als Form-Feld im Body stehen (nicht als Query-Param)
-        body = {"auth_key": self._auth_key}
-        try:
-            async with self._session.post(
-                url,
-                data=body,
-                timeout=aiohttp.ClientTimeout(total=API_TIMEOUT),
-            ) as resp:
-                if resp.status == 401:
-                    raise ShellyCloudAuthError("Ungültiger Auth Key")
-                if resp.status != 200:
-                    text = await resp.text()
-                    raise ShellyCloudApiError(f"HTTP {resp.status}: {text}")
-                data = await resp.json(content_type=None)
-        except asyncio.TimeoutError as exc:
-            raise ShellyCloudApiError("Timeout bei API-Anfrage") from exc
-        except aiohttp.ClientError as exc:
-            raise ShellyCloudApiError(f"Verbindungsfehler: {exc}") from exc
-
-        if isinstance(data, dict):
-            if data.get("isok") is False:
-                errors = data.get("errors", "Unbekannter Fehler")
-                # isok=False mit auth-Fehler
-                if "auth" in str(errors).lower() or "key" in str(errors).lower():
-                    raise ShellyCloudAuthError("Ungültiger Auth Key")
-                raise ShellyCloudApiError(str(errors))
-            devices = data.get("data", {}).get("devices", {})
-            return list(devices.values()) if isinstance(devices, dict) else devices
-        return []
-
-    async def set_switch(
+async def set_switch(
         self, device_id: str, on: bool, channel: int = 0, toggle_after: int | None = None
     ) -> None:
         body: dict[str, Any] = {"id": device_id, "channel": channel, "on": on}

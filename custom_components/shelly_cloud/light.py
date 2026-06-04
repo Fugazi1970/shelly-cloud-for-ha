@@ -17,17 +17,19 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import ShellyCloudConfigEntry
-from .const import LIGHT_CODES
 from .coordinator import ShellyCloudCoordinator
 from .entity_base import ShellyCloudEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-# Shelly Effekte (0-6)
 EFFECTS = ["None", "Meteor Shower", "Gradual Change", "Flash", "Breath", "On/Off Gradual", "Red/Green Change"]
-
 MIN_COLOR_TEMP_K = 2700
 MAX_COLOR_TEMP_K = 7000
+
+
+def _is_light(dev_data: dict[str, Any]) -> bool:
+    status = dev_data.get("status", {})
+    return bool(status.get("lights")) or "brightness" in status or "gain" in status
 
 
 async def async_setup_entry(
@@ -38,8 +40,8 @@ async def async_setup_entry(
     coordinator: ShellyCloudCoordinator = entry.runtime_data
     entities = [
         ShellyCloudLight(coordinator, device_id)
-        for device_id, meta in coordinator.device_info.items()
-        if (meta.get("code") or meta.get("type", "")) in LIGHT_CODES
+        for device_id in coordinator.device_ids
+        if _is_light(coordinator.data.get(device_id, {}))
     ]
     async_add_entities(entities)
 
@@ -54,8 +56,8 @@ class ShellyCloudLight(ShellyCloudEntity, LightEntity):
 
     def _light_status(self) -> dict[str, Any]:
         status = self._device_data.get("status", {})
-        lights = status.get("lights") or [status]
-        return lights[0] if lights else {}
+        lights = status.get("lights")
+        return lights[0] if lights else status
 
     @property
     def color_mode(self) -> ColorMode:
@@ -74,9 +76,7 @@ class ShellyCloudLight(ShellyCloudEntity, LightEntity):
             modes.add(ColorMode.RGB)
         if "color_temp" in s or "temp" in s:
             modes.add(ColorMode.COLOR_TEMP)
-        if not modes:
-            modes.add(ColorMode.BRIGHTNESS)
-        return modes
+        return modes or {ColorMode.BRIGHTNESS}
 
     @property
     def supported_features(self) -> LightEntityFeature:
@@ -89,17 +89,14 @@ class ShellyCloudLight(ShellyCloudEntity, LightEntity):
 
     @property
     def brightness(self) -> int | None:
-        gain = self._light_status().get("brightness") or self._light_status().get("gain")
-        if gain is not None:
-            return round(gain / 100 * 255)
-        return None
+        s = self._light_status()
+        gain = s.get("brightness") or s.get("gain")
+        return round(gain / 100 * 255) if gain is not None else None
 
     @property
     def rgb_color(self) -> tuple[int, int, int] | None:
         s = self._light_status()
-        if "red" in s:
-            return (s["red"], s["green"], s["blue"])
-        return None
+        return (s["red"], s["green"], s["blue"]) if "red" in s else None
 
     @property
     def color_temp_kelvin(self) -> int | None:
@@ -109,25 +106,19 @@ class ShellyCloudLight(ShellyCloudEntity, LightEntity):
     @property
     def effect(self) -> str | None:
         idx = self._light_status().get("effect")
-        if idx is not None and 0 <= idx < len(EFFECTS):
-            return EFFECTS[idx]
-        return None
+        return EFFECTS[idx] if idx is not None and 0 <= idx < len(EFFECTS) else None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        brightness = None
-        if ATTR_BRIGHTNESS in kwargs:
-            brightness = round(kwargs[ATTR_BRIGHTNESS] / 255 * 100)
-
         rgb = kwargs.get(ATTR_RGB_COLOR)
+        brightness = kwargs.get(ATTR_BRIGHTNESS)
         color_temp = kwargs.get(ATTR_COLOR_TEMP_KELVIN)
-
         effect_name = kwargs.get(ATTR_EFFECT)
-        effect_idx = EFFECTS.index(effect_name) if effect_name in EFFECTS else None
+        effect_idx = EFFECTS.index(effect_name) if effect_name in (EFFECTS or []) else None
 
         await self.coordinator.api.set_light(
             self._device_id,
             on=True,
-            brightness=brightness,
+            brightness=round(brightness / 255 * 100) if brightness is not None else None,
             red=rgb[0] if rgb else None,
             green=rgb[1] if rgb else None,
             blue=rgb[2] if rgb else None,
