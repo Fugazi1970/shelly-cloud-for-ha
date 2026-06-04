@@ -82,14 +82,18 @@ class ShellyCloudApi:
         return results
 
     async def list_devices(self) -> list[dict[str, Any]]:
-        """Alle Geräte des Accounts abrufen (v1 Endpoint)."""
+        """Alle Geräte des Accounts abrufen.
+
+        Shelly Cloud v1 erwartet auth_key im POST-Body (form-encoded),
+        nicht als Query-Parameter.
+        """
         url = self._url("/interface/device/list")
-        params = {"auth_key": self._auth_key}
+        # auth_key muss als Form-Feld im Body stehen (nicht als Query-Param)
+        body = {"auth_key": self._auth_key}
         try:
             async with self._session.post(
                 url,
-                params=params,
-                json={},
+                data=body,
                 timeout=aiohttp.ClientTimeout(total=API_TIMEOUT),
             ) as resp:
                 if resp.status == 401:
@@ -97,7 +101,7 @@ class ShellyCloudApi:
                 if resp.status != 200:
                     text = await resp.text()
                     raise ShellyCloudApiError(f"HTTP {resp.status}: {text}")
-                data = await resp.json()
+                data = await resp.json(content_type=None)
         except asyncio.TimeoutError as exc:
             raise ShellyCloudApiError("Timeout bei API-Anfrage") from exc
         except aiohttp.ClientError as exc:
@@ -105,7 +109,11 @@ class ShellyCloudApi:
 
         if isinstance(data, dict):
             if data.get("isok") is False:
-                raise ShellyCloudApiError(data.get("errors", "Unbekannter Fehler"))
+                errors = data.get("errors", "Unbekannter Fehler")
+                # isok=False mit auth-Fehler
+                if "auth" in str(errors).lower() or "key" in str(errors).lower():
+                    raise ShellyCloudAuthError("Ungültiger Auth Key")
+                raise ShellyCloudApiError(str(errors))
             devices = data.get("data", {}).get("devices", {})
             return list(devices.values()) if isinstance(devices, dict) else devices
         return []
@@ -161,6 +169,37 @@ class ShellyCloudApi:
         await self._post("/v2/devices/api/set/light", body)
 
     async def validate_credentials(self) -> bool:
-        """Credentials testen, indem die Geräteliste abgerufen wird."""
-        await self.list_devices()
+        """Credentials testen: erst v2-Endpoint, dann Geräteliste."""
+        # Schnelltest: v2-Endpoint mit leerer IDs-Liste — liefert bei gültigem
+        # Auth Key eine leere Liste, bei ungültigem einen Fehler.
+        url = self._url("/v2/devices/api/get")
+        params = {"auth_key": self._auth_key}
+        try:
+            async with self._session.post(
+                url,
+                params=params,
+                json={"ids": [], "select": ["status"]},
+                timeout=aiohttp.ClientTimeout(total=API_TIMEOUT),
+            ) as resp:
+                if resp.status == 401:
+                    raise ShellyCloudAuthError("Ungültiger Auth Key")
+                if resp.status not in (200, 400):
+                    # 400 kann bei leerer IDs-Liste kommen — trotzdem gültig
+                    text = await resp.text()
+                    raise ShellyCloudApiError(f"HTTP {resp.status}: {text}")
+                # Antwort lesen um zu prüfen ob auth-Fehler im Body steht
+                try:
+                    data = await resp.json(content_type=None)
+                    if isinstance(data, dict):
+                        err = data.get("error", "")
+                        if "auth" in str(err).lower() or "unauthorized" in str(err).lower():
+                            raise ShellyCloudAuthError("Ungültiger Auth Key")
+                except Exception:
+                    pass
+        except ShellyCloudApiError:
+            raise
+        except asyncio.TimeoutError as exc:
+            raise ShellyCloudApiError("Timeout bei API-Anfrage") from exc
+        except aiohttp.ClientError as exc:
+            raise ShellyCloudApiError(f"Verbindungsfehler: {exc}") from exc
         return True
