@@ -1,5 +1,7 @@
 # Shelly Cloud for Home Assistant
 
+🇬🇧 English | [🇩🇪 Deutsch](README.de.md)
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![version](https://img.shields.io/badge/version-1.0.0--alpha.2-blue.svg)
 ![status](https://img.shields.io/badge/status-alpha-orange.svg)
