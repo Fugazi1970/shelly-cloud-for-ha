@@ -15,15 +15,35 @@ from .entity_base import ShellyCloudEntity
 _LOGGER = logging.getLogger(__name__)
 
 
-def _is_switch(dev_data: dict[str, Any]) -> bool:
-    """True wenn das Gerät Relais/Schalter-Kanäle hat."""
-    status = dev_data.get("status", {})
-    return bool(status.get("switches") or status.get("relays"))
+def _rpc_switch_channels(status: dict[str, Any]) -> list[int]:
+    """Return Gen2/RPC switch channel ids from status keys like switch:0."""
+    channels: list[int] = []
+    for key, value in status.items():
+        if not key.startswith("switch:") or not isinstance(value, dict):
+            continue
+        try:
+            channels.append(int(key.split(":", 1)[1]))
+        except (IndexError, ValueError):
+            continue
+    return sorted(channels)
 
 
-def _switch_channels(dev_data: dict[str, Any]) -> list:
+def _switch_channels(dev_data: dict[str, Any]) -> list[int]:
+    """Return all relay/switch channel ids for block and RPC status formats."""
     status = dev_data.get("status", {})
-    return status.get("switches") or status.get("relays") or []
+    block_channels = status.get("switches") or status.get("relays")
+    if block_channels:
+        return list(range(len(block_channels)))
+    return _rpc_switch_channels(status)
+
+
+
+def _switch_channel_status(status: dict[str, Any], channel: int) -> dict[str, Any]:
+    """Return the status dict for a switch channel in block or RPC format."""
+    channels = status.get("switches") or status.get("relays") or []
+    if len(channels) > channel:
+        return channels[channel]
+    return status.get(f"switch:{channel}", {})
 
 
 async def async_setup_entry(
@@ -36,9 +56,8 @@ async def async_setup_entry(
 
     for device_id in coordinator.device_ids:
         dev_data = coordinator.data.get(device_id, {})
-        if _is_switch(dev_data):
-            for channel, _ in enumerate(_switch_channels(dev_data)):
-                entities.append(ShellyCloudSwitch(coordinator, device_id, channel))
+        for channel in _switch_channels(dev_data):
+            entities.append(ShellyCloudSwitch(coordinator, device_id, channel))
 
     async_add_entities(entities)
 
@@ -61,11 +80,8 @@ class ShellyCloudSwitch(ShellyCloudEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         status = self._device_data.get("status", {})
-        channels = status.get("switches") or status.get("relays") or []
-        if len(channels) > self._channel:
-            ch = channels[self._channel]
-            return ch.get("output") if "output" in ch else ch.get("ison")
-        return None
+        ch = _switch_channel_status(status, self._channel)
+        return ch.get("output") if "output" in ch else ch.get("ison")
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self.coordinator.api.set_switch(self._device_id, True, self._channel)
