@@ -3,7 +3,7 @@
 [🇬🇧 English](README.md) | 🇩🇪 Deutsch
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-![version](https://img.shields.io/badge/version-1.0.0--alpha.2-blue.svg)
+![version](https://img.shields.io/badge/version-1.0.0--alpha.3-blue.svg)
 ![status](https://img.shields.io/badge/status-alpha-orange.svg)
 
 Home Assistant Integration zur Steuerung von Shelly-Geräten über die **Shelly Cloud API v2** – also über die Cloud, **ohne lokalen Zugriff** auf die Geräte.

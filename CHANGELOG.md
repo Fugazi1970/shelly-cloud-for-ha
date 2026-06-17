@@ -5,6 +5,13 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.0.0-alpha.3] – 2026-06-17
+
+### Behoben
+- Shelly Gen2/Plus-Geräte (z. B. Shelly Plus 1 Mini) wurden nicht als `switch`-Entität erkannt,
+  wenn ihr Status via RPC-Keys (`switch:0`, `switch:1` …) gemeldet wird statt über das
+  Legacy-Array `switches`/`relays`. Dank Beitrag von [@TomTomNavigator](https://github.com/TomTomNavigator).
+
 ## [1.0.0-alpha.2] – 2026-06-04
 
 ### Hinzugefügt
